@@ -1,0 +1,38 @@
+# A curator's index that reaches into upstream repos via per-entry
+# `repo:` blocks. The upstreams don't ship their own pinakes.yaml — this
+# is how an integrator publishes a navigable view of someone else's docs.
+version: 1
+name: external-docs
+description: >
+  Curated pointers into upstream OSS docs. We don't fork; we just point.
+
+entries:
+  - id: rust-book-chapter-1
+    name: The Rust Book — Chapter 1
+    description: "Getting Started with Rust."
+    kind: doc
+    path: src/ch01-00-getting-started.md
+    repo:
+      url: https://github.com/rust-lang/book.git
+      branch: main
+
+  # An upstream that DOES ship its own pinakes.yaml — we just descend.
+  - id: tokio
+    name: Tokio docs
+    description: "Async runtime docs (Tokio's own pinakes index)."
+    kind: index
+    path: pinakes.yaml
+    repo:
+      url: https://github.com/tokio-rs/tokio.git
+      branch: master
+
+  # A pinned commit — never auto-refreshed.
+  - id: design-doc-2025-frozen
+    name: 2025 design doc (pinned)
+    description: "Frozen at the version the team signed off on."
+    kind: doc
+    path: docs/design-2025.md
+    repo:
+      url: git@github.example.com:platform/docs.git
+      commit: 0123abcdef0123abcdef0123abcdef0123abcdef
+      token_env: PLATFORM_DOCS_TOKEN

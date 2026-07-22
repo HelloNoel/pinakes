@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/pinakes/v1/registry.schema.json",
+  "title": "pinakes registry",
+  "description": "A consumer-side registry mapping names to pinakes root indexes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["indexes"],
+  "properties": {
+    "indexes": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/registryEntry"
+      },
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+      }
+    }
+  },
+  "$defs": {
+    "gitRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1 },
+        "branch": { "type": "string" },
+        "tag": { "type": "string" },
+        "commit": { "type": "string", "pattern": "^[0-9a-fA-F]{7,40}$" },
+        "token_env": { "type": "string" },
+        "submodules": { "type": "boolean", "default": true }
+      }
+    },
+    "registryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "path"],
+      "properties": {
+        "description": { "type": "string" },
+        "repo": { "$ref": "#/$defs/gitRef" },
+        "path": { "type": "string", "minLength": 1 },
+        "refresh": {
+          "description": "'never' or a humantime duration like '5m', '1h', '24h'.",
+          "type": "string",
+          "pattern": "^(never|[0-9]+\\s*(ns|us|ms|s|m|h|d|w|M|y)( +[0-9]+\\s*(ns|us|ms|s|m|h|d|w|M|y))*)$"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+# The smallest valid pinakes index: header + one entry.
+version: 1
+name: my-project
+description: "Internal docs for my-project."
+
+entries:
+  - id: getting-started
+    name: Getting started
+    kind: doc
+    path: docs/getting-started.md

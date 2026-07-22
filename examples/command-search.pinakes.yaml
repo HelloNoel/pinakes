@@ -1,0 +1,28 @@
+# A pinakes with a sandboxed search command. The consumer runs ripgrep
+# under the policy chain; the LLM gets matched lines back instead of
+# whole files.
+version: 1
+name: my-project
+
+# Allow only ripgrep, scoped to the docs/ subtree. Children may NARROW
+# this — they cannot widen it. An empty chain means deny-all.
+command_policy:
+  allow: '^rg( -[A-Za-z]+)*( --[A-Za-z-]+(=[^ ]+)?)* [^;&|`$]+ docs/'
+  timeout_secs: 10
+
+entries:
+  - id: search
+    name: Full-text search
+    description: "Substring search across docs/. Pass a query string."
+    kind: command
+    # `{query}` is substituted into argv elements (NOT via shell).
+    # The post-substitution argv must still match the allow regex.
+    argv: ["rg", "-n", "--max-count", "20", "{query}", "docs/"]
+    # rg exits 1 when no matches are found — treat that as success too,
+    # otherwise empty-result queries surface as errors to the LLM.
+    success_exit_codes: [0, 1]
+
+  - id: getting-started
+    name: Getting started
+    kind: doc
+    path: docs/getting-started.md

@@ -1,0 +1,24 @@
+# A two-level index: docs at the root, plus a child index for the API
+# section. The consumer descends into `api` only when the LLM asks to.
+version: 1
+name: my-project
+description: "Internal docs for my-project."
+
+entries:
+  - id: getting-started
+    name: Getting started
+    description: "Install + first run."
+    kind: doc
+    path: docs/getting-started.md
+
+  - id: architecture
+    name: Architecture
+    description: "How the pieces fit."
+    kind: doc
+    path: docs/architecture.md
+
+  - id: api
+    name: API reference
+    description: "REST endpoints and error codes."
+    kind: index
+    path: docs/api/pinakes.yaml

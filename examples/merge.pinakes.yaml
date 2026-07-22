@@ -1,0 +1,32 @@
+# Merge flattens another index's entries into this one. Useful for
+# composing shared docs across multiple parent indexes. The `prefix:`
+# disambiguates ids when merging multiple sibling indexes that might
+# otherwise collide.
+version: 1
+name: combined-platform-docs
+
+entries:
+  - id: overview
+    name: Platform overview
+    kind: doc
+    path: docs/overview.md
+
+  # Pull in the auth-service team's index, prefixing each of its entries
+  # with "auth-" so e.g. "readme" becomes "auth-readme".
+  - kind: merge
+    path: services/auth/pinakes.yaml
+    prefix: "auth-"
+
+  # Pull in the billing-service team's index too. Their `readme` entry
+  # would collide with the auth one without prefixes.
+  - kind: merge
+    path: services/billing/pinakes.yaml
+    prefix: "billing-"
+
+  # Merge from another repo entirely.
+  - kind: merge
+    path: pinakes.yaml
+    prefix: "shared-"
+    repo:
+      url: https://github.example.com/platform/shared-docs.git
+      branch: main

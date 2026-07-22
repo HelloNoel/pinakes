@@ -1,0 +1,28 @@
+# A consumer-side registry. Each key names a top-level pinakes index;
+# the consumer (MCP server, library, harness) loads these on demand
+# and exposes them to the LLM as the available indexes.
+indexes:
+  rust-book:
+    description: "The Rust Programming Language book."
+    repo:
+      url: https://github.com/rust-lang/book.git
+      branch: main
+    path: pinakes.yaml
+    refresh: 24h
+
+  internal:
+    description: "Our internal platform docs."
+    repo:
+      url: git@github.example.com:platform/docs.git
+      branch: main
+      token_env: PLATFORM_DOCS_TOKEN
+    path: pinakes.yaml
+    refresh: 1h
+
+  pinned-spec:
+    description: "Frozen reference at the v1 release tag."
+    repo:
+      url: https://github.com/example/spec.git
+      tag: v1.0
+    path: pinakes.yaml
+    refresh: never        # pinned refs are immutable; no fetch
