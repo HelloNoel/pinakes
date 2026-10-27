@@ -31,7 +31,7 @@ four kinds:
 - `doc` — a leaf text file the consumer is allowed to read
 - `index` — a child pinakes index (same repo or another)
 - `merge` — inline another index's entries here
-- `command` — a sandboxed shell command (RAG, ripgrep, custom retriever)
+- `command` — a policy-controlled command (RAG, ripgrep, custom retriever)
 
 Indexes form a directed graph rooted at a single index file. Cycles MUST
 be detected and rejected.
@@ -74,14 +74,20 @@ loudly rather than silently.)
 
 ### 2.3 Versioning
 
-The top-level `version:` field is the spec major version. Version 1 of
-the spec corresponds to `version: 1` in the file. Implementations MUST
-reject any file whose `version:` they do not recognize.
+The top-level `version:` is the spec major version. Consumers MUST reject an
+unrecognized version. Because version 1 rejects unknown fields and entry kinds,
+adding a field or kind requires a new major version; optional does not mean
+backwards-compatible. Editorial clarifications do not change the major version.
 
-Backwards-incompatible changes to the spec bump the major version.
-Backwards-compatible additions (new optional fields, new entry kinds
-behind a feature gate) keep the major version and are documented in
-[`CHANGELOG.md`](./CHANGELOG.md).
+### 2.4 Scalar constraints
+
+Index names, explicit entry IDs, non-merge entry names, repository URLs, paths,
+and supplied `allow`, `branch`, `tag`, and `token_env` strings MUST be nonempty.
+Optional fields MUST be omitted rather than set to YAML null. A derived ID MUST
+be nonempty; provide an explicit ID when the name has no alphanumeric characters.
+`timeout_secs` MUST be a positive integer. `argv` MUST contain at least one string
+and its first element (the executable) MUST be nonempty; later arguments may be
+empty. Each success exit code MUST be an integer from 0 through 255.
 
 ---
 
@@ -93,7 +99,7 @@ Each entry is a YAML mapping with these common fields:
 | --- | --- | :---: | --- |
 | `kind` | string | yes | One of `doc`, `index`, `merge`, `command`. |
 | `id` | string | no | Stable identifier; auto-generated from `name` if omitted (see §3.1). |
-| `name` | string | yes (except `merge`) | Human-readable label. |
+| `name` | string | yes (doc, index, command) | Human-readable label. |
 | `description` | string | no | One-line summary the LLM uses to choose. |
 | `repo` | object | no | Override the enclosing index's repo for this entry only (see §4). |
 
@@ -157,6 +163,9 @@ actually descends into them.
 
 ### 3.4 `merge` entries
 
+Merge entries accept only `kind`, `path`, `prefix`, and `repo`. The common `id`,
+`name`, and `description` fields apply only to doc, index, and command entries.
+
 ```yaml
 - kind: merge
   path: docs/api/pinakes.yaml
@@ -176,9 +185,11 @@ themselves have an `id` or appear in a consumer's view of the parent.
 If `prefix` is set, every merged entry's `id` becomes `prefix + original_id`.
 This disambiguates when a parent merges multiple sibling indexes.
 
-Cycle detection: implementations MUST track visited (repo URL, path)
-pairs and refuse to follow a `merge` whose target is already on the
-load stack.
+Cycle detection: implementations MUST track repository identity (URL and Git
+reference) and normalized index path along the active ancestry. They MUST reject
+any `merge` or `index` target already in that ancestry, including ancestry carried
+through a merge and retained across lazy index descents. Different Git references
+are distinct identities. Reusing an index in separate sibling branches is allowed.
 
 ### 3.5 `command` entries
 
@@ -187,7 +198,7 @@ load stack.
   name: Full-text search
   kind: command
   description: "Substring search over docs/. Pass a query."
-  argv: ["rg", "--max-count", "20", "{query}", "docs/"]
+  argv: ["rg", "--max-count", "20", "--", "{query}", "docs/"]
   success_exit_codes: [0, 1]       # OPTIONAL
   repo: { ... }                    # OPTIONAL
 ```
@@ -224,13 +235,18 @@ repo:
 | `url` | string | yes | Git URL. SSH (`git@host:org/repo.git`), HTTPS, and `file://` are valid. |
 | `branch` | string | no | Branch name. Mutually exclusive with `tag` and `commit`. |
 | `tag` | string | no | Tag name. |
-| `commit` | string | no | Full SHA. **Pinned commits MUST never be auto-refreshed.** |
+| `commit` | string | no | 40-character SHA-1 commit ID or unambiguous 7-39 character prefix. **Pinned commits MUST never be auto-refreshed.** |
 | `token_env` | string | no | Environment variable name to read an auth token from. |
 | `submodules` | bool | no | Whether to recursively initialize submodules on clone. Default `true`. |
 
 If `repo` is omitted, the entry uses the enclosing index's repo. If no
 parent has a repo (e.g. a hand-written root index loaded from a local
 file), the consumer SHOULD reject the index.
+
+Commit prefixes MUST resolve to exactly one commit; missing or ambiguous prefixes
+MUST be rejected. Consumers MUST acquire sufficient history (or fetch the requested
+object) to resolve a pin before publishing the checkout. Pinned checkouts MUST NOT
+be refreshed automatically.
 
 ### 4.1 Path semantics
 
@@ -277,10 +293,16 @@ indexes:
 | `repo` | object | yes | Same shape as §4. |
 | `path` | string | yes | Path to the root index inside that repo. |
 | `description` | string | no | One-line summary the consumer may surface. |
-| `refresh` | string | no | Either `never` or a duration string (`5m`, `1h`, `24h`, …). Overrides any consumer default. |
+| `refresh` | string | no | Either `never` or a duration string (`5m`, `1h`, `24h`, …). Overrides the consumer default throughout the index tree and all referenced repositories. |
 
 Registry **keys** are the names a consumer (or LLM) uses to address an
 index. They MUST be unique within a registry.
+
+Registry mappings MUST contain at least one index. Names MUST match
+`^[A-Za-z0-9][A-Za-z0-9_-]*$`. Refresh strings are case-insensitive `never` or
+durations accepted by the humantime 2.x grammar (including compound durations).
+A zero duration disables automatic refresh. Duration parsing and other semantic
+constraints require consumer validation in addition to JSON Schema validation.
 
 ---
 
@@ -299,10 +321,20 @@ command_policy:
 
 | Field | Type | Required | Notes |
 | --- | --- | :---: | --- |
-| `allow` | string (regex) | no | A POSIX-extended regex. |
+| `allow` | string (regex) | no | A portable regex; see §6.1. |
 | `timeout_secs` | integer | no | Wall-clock seconds. |
 
 ### 6.1 Allow regex (intersect-only)
+
+For portable policies, consumers MUST support literals, `.`, `^`, `$`, bracket
+classes and negated classes, grouping, alternation, and the quantifiers `?`, `*`,
+`+`, `{m}`, `{m,}`, and `{m,n}`. Matching is case-sensitive on Unicode scalar values;
+`.` excludes newline, anchors refer to the whole string, and named POSIX classes
+such as `[[:alpha:]]` use ASCII definitions. Matching searches for a substring
+unless the author adds anchors. Consumers MUST reject unsupported syntax.
+Additional engine syntax MAY be supported, but authors using it sacrifice
+portability; shorthand classes such as `\w` and look-around are outside this
+portable subset. AIexandria additionally accepts Rust `regex` 1.x syntax.
 
 The flattened `argv` (joined by single spaces) MUST match every `allow`
 regex on the chain — root and every parent down to the entry. **Children
@@ -318,10 +350,14 @@ Implementations MUST NOT invoke a shell to expand it.
 
 ### 6.2 Timeout
 
-The chain's effective timeout is the **deepest non-null** `timeout_secs`
+The chain's effective timeout is the **deepest supplied** `timeout_secs`
 on the chain (a child's value takes precedence over the parent's). If no
 level sets a timeout, implementations SHOULD apply a sane default
 (reference implementation: 30 seconds).
+
+The timeout covers process execution and collection of both output streams,
+including pipes held by descendants. On timeout consumers MUST stop waiting and
+terminate the command, and SHOULD terminate its remaining descendants.
 
 ### 6.3 Exit codes
 
@@ -331,10 +367,30 @@ where exit 1 means "no matches").
 
 ### 6.4 Output
 
+Consumers SHOULD bound retained stdout and stderr while continuing to drain both
+streams. Truncation MUST preserve valid UTF-8 and MUST NOT panic on a character
+boundary. Error diagnostics SHOULD have the same bounded-output treatment.
+
 Implementations SHOULD truncate command stdout to a reasonable cap
 (reference implementation: 256 KiB). The truncation point and behavior
 (suffix, error, …) is implementation-defined; this is not part of the
 spec because it depends on the consumer's transport.
+
+### 6.5 Execution trust
+
+Command policy is not an operating-system sandbox. A working directory does not
+confine filesystem access, and direct process execution does not restrict a
+program's network access, environment, or privileges. A consumer enabling commands
+for a registry trusts the registered index and the command definitions and policies
+in its referenced indexes, including future updates. Operators MUST either trust
+those authors or enforce their own execution authorization and OS isolation.
+Consumers MAY disable execution while still exposing command metadata.
+
+Query arguments MUST be separated from program options using the program's option
+terminator (for ripgrep, `--` before `{query}`) or an equivalent explicit pattern
+argument. Direct execution prevents shell expansion, not command-line option
+injection. An allow regex operates on the joined string and cannot prove argument
+boundaries or that the selected program is safe.
 
 ---
 
@@ -364,7 +420,10 @@ hosts:
     username: oauth2
 ```
 
-Submodule remotes MUST be authenticated against the same host map.
+Submodule remotes MUST be authenticated against the same host map; relative URLs
+MUST first be resolved against the parent remote. Missing explicitly configured
+credentials MUST be errors, including during submodule initialization.
+When no explicit credentials match, consumers MAY use system credential helpers.
 
 ---
 
