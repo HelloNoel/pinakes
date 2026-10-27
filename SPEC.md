@@ -8,9 +8,12 @@ that describes a hierarchical, navigable view of a documentation corpus
 hosted in one or more git repositories.
 
 The intent is to let documentation authors publish a single, vendor-neutral
-description of *what an LLM is allowed to read* and *how it should drill
-in*, and let any conforming runtime (MCP server, library, agent harness,
-…) act on that description without coupling to a specific implementation.
+description of *which repositories an LLM is allowed to read*, *which documents
+should be presented for navigation*, and *how it should drill into them*.
+A repository referenced by a registry or entry is the read-access boundary;
+`doc` entries curate navigation and are not a per-file allow-list. Any conforming
+runtime (MCP server, library, agent harness, …) can act on that description
+without coupling to a specific implementation.
 
 The keywords MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY in this document
 are to be interpreted as in [RFC 2119].
@@ -124,6 +127,10 @@ a duplicate-id error.
 | Field | Type | Required | Notes |
 | --- | --- | :---: | --- |
 | `path` | string | yes | Repo-relative path to a UTF-8 text file. |
+
+Once a registry or entry references a repository, consumers MAY expose reads of
+other UTF-8 files beneath that repository's checkout root. A `doc` entry is a
+curated navigation leaf, not a file-access allow-list.
 
 Consumers MUST canonicalize `path` and verify it stays within the entry's
 repo root. Path-traversal attempts (`..`, absolute paths, symlink escapes)

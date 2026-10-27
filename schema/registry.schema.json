@@ -30,6 +30,13 @@
         "commit": { "type": "string", "pattern": "^[0-9a-fA-F]{7,40}$" },
         "token_env": { "type": "string" },
         "submodules": { "type": "boolean", "default": true }
+      },
+      "not": {
+        "anyOf": [
+          { "required": ["branch", "tag"] },
+          { "required": ["branch", "commit"] },
+          { "required": ["tag", "commit"] }
+        ]
       }
     },
     "registryEntry": {
