@@ -1,5 +1,12 @@
 # Changelog
 
+## Documentation and validation — 2026-10-29
+
+- Add an implementation guide and conformance checklist.
+- Clarify that unknown fields and kinds make additions incompatible with v1.
+- Publish canonical schema URLs and run shared validation in GitHub Actions.
+
+
 All notable changes to the pinakes specification are documented here.
 The spec follows [Semantic Versioning](https://semver.org/) at the spec
 level: the major version (the value of the `version:` field in a pinakes

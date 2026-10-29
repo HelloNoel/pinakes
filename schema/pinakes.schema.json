@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.com/pinakes/v1/pinakes.schema.json",
+  "$id": "https://raw.githubusercontent.com/HelloNoel/pinakes/main/schema/pinakes.schema.json",
   "title": "pinakes index",
   "description": "A YAML-encoded pinakes index (version 1).",
   "type": "object",

@@ -25,9 +25,13 @@ implementation.
 | [`examples/`](./examples/) | Annotated example index files |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Spec version history |
 
+## Implement a consumer
+
+Start with [IMPLEMENTING.md](IMPLEMENTING.md) for an implementation order, conformance checklist, and shared validation fixtures.
+
 ## Reference implementation
 
-[AIexandria](https://codeberg.org/HelloNoel/AIexandria) is a Rust MCP server
+[AIexandria](https://github.com/HelloNoel/aiexandria) is a Rust MCP server
 that implements this spec. It is one implementation among (eventually)
 many; nothing in this spec depends on it.
 
