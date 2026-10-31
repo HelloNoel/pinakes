@@ -1,7 +1,6 @@
 # The pinakes specification
 
 **Version:** 1 (draft)
-**Status:** Draft. Subject to breaking change until version 1 is finalized.
 
 This document defines the **pinakes** format: a YAML file (`pinakes.yaml`)
 that describes a hierarchical, navigable view of a documentation corpus
@@ -74,10 +73,23 @@ loudly rather than silently.)
 
 ### 2.3 Versioning
 
-The top-level `version:` is the spec major version. Consumers MUST reject an
-unrecognized version. Because version 1 rejects unknown fields and entry kinds,
-adding a field or kind requires a new major version; optional does not mean
-backwards-compatible. Editorial clarifications do not change the major version.
+The top-level `version:` is the spec's major format version, independent of
+implementation release numbers. Consumers MUST reject an unrecognized version.
+
+Before finalization, a reviewed revision MAY change accepted syntax or semantics
+while retaining the format version. Each published revision must have a stable
+identifier and a [changelog entry](CHANGELOG.md) recording compatibility effects
+and supporting-consumer requirements. It should be available through an
+immutable repository commit or tag. Producers using new features should state
+the required revision; the format version alone does not identify it.
+
+After finalization, incompatible changes require a new major format version.
+Editorial clarifications that change neither accepted inputs nor meaning do
+not change the format version. Finalization requires at least one independent
+implementation alongside the reference implementation.
+
+Consumers MUST reject unknown fields and entry kinds. Adding an optional field
+does not make it readable by an older strict consumer.
 
 ### 2.4 Scalar constraints
 
@@ -158,8 +170,10 @@ MUST be rejected.
 | `path` | string | yes | Repo-relative path to another `pinakes.yaml`. |
 
 Following an `index` entry produces a new index level. Consumers SHOULD
-NOT eagerly load child indexes — load on demand, when the consumer
-actually descends into them.
+NOT eagerly load child indexes during ordinary navigation —
+load on demand when descending into them. Bounded metadata discovery or an
+explicit cache-preparation operation MAY preload child indexes without
+eagerly acquiring every referenced document or command repository.
 
 ### 3.4 `merge` entries
 
@@ -235,7 +249,7 @@ repo:
 | `url` | string | yes | Git URL. SSH (`git@host:org/repo.git`), HTTPS, and `file://` are valid. |
 | `branch` | string | no | Branch name. Mutually exclusive with `tag` and `commit`. |
 | `tag` | string | no | Tag name. |
-| `commit` | string | no | 40-character SHA-1 commit ID or unambiguous 7-39 character prefix. **Pinned commits MUST never be auto-refreshed.** |
+| `commit` | string | no | Full SHA-1 (40 characters) or SHA-256 (64 characters) commit ID, or an unambiguous prefix of at least 7 characters. The target repository determines the object format. **Pinned commits MUST never be auto-refreshed.** |
 | `token_env` | string | no | Environment variable name to read an auth token from. |
 | `submodules` | bool | no | Whether to recursively initialize submodules on clone. Default `true`. |
 
@@ -243,10 +257,20 @@ If `repo` is omitted, the entry uses the enclosing index's repo. If no
 parent has a repo (e.g. a hand-written root index loaded from a local
 file), the consumer SHOULD reject the index.
 
-Commit prefixes MUST resolve to exactly one commit; missing or ambiguous prefixes
-MUST be rejected. Consumers MUST acquire sufficient history (or fetch the requested
-object) to resolve a pin before publishing the checkout. Pinned checkouts MUST NOT
-be refreshed automatically.
+A `commit` value MUST contain 7–64 hexadecimal characters. Its maximum valid
+length is determined by the target repository's object format: 40 for SHA-1,
+64 for SHA-256. Consumers MUST reject a pin that is too long for that repository
+or uses an unsupported object format. No additional hash-algorithm field is
+required. JSON Schema checks the shared syntactic range; consumers MUST also
+perform these repository-aware checks.
+
+Commit prefixes MUST identify exactly one object, and that object MUST be a
+commit. Missing or ambiguous prefixes and non-commit objects MUST be rejected;
+a hexadecimal branch or tag name MUST NOT take precedence over an object-ID
+prefix. Full IDs are recommended for published indexes. Consumers MUST acquire
+sufficient history (or fetch the requested object) to resolve a pin before
+serving content. Once resolved, a cached pin MUST retain that exact commit ID;
+later object acquisition MUST NOT reinterpret the prefix as a different commit.
 
 ### 4.1 Path semantics
 
@@ -256,10 +280,21 @@ root, not the parent's.
 
 ### 4.2 Refresh policy
 
-Consumers MUST treat clones as long-lived caches. They SHOULD re-fetch
-on a configurable interval (lazy, no background scheduler is required).
+Consumers MUST treat acquired repositories as long-lived caches. They SHOULD
+re-fetch mutable references on a configurable interval (lazy refresh is allowed;
+no background scheduler is required).
 
-Pinned `commit:` refs are immutable and MUST NOT be re-fetched.
+A pinned `commit:` MUST NOT advance or be re-resolved automatically, including
+during a forced cache update. Consumers MAY retrieve missing objects needed to
+serve the already resolved commit. Such acquisition must preserve that commit
+identity; it is not permission to refresh a moving branch in place of the pin.
+
+Selective object acquisition and checkout are implementation choices. A file's
+absence from a partial checkout alone MUST NOT be treated as absence from the
+selected revision. Serving files and executing supported commands MUST preserve
+repository-root path semantics, the selected revision, and required submodule
+content. This specification does not mandate a physical cache layout or MCP
+freshness/snapshot API.
 
 ---
 
@@ -450,7 +485,7 @@ A conforming consumer MAY:
 A conforming consumer MUST NOT:
 
 - Execute `command` entries via a shell.
-- Auto-refresh pinned `commit:` refs.
+- Advance or automatically re-resolve pinned `commit:` refs.
 - Allow children to widen any parent's `allow` regex.
 
 A test corpus for conformance lives at [`examples/`](./examples/). It is

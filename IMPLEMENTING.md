@@ -29,7 +29,7 @@ reference implementation live in [AIexandria](https://github.com/HelloNoel/aiexa
 | Area | Minimum verification |
 | --- | --- |
 | Parsing | Both schemas, duplicate keys, nulls, unknown fields/kinds/versions |
-| References | Branch/tag/commit selection, abbreviated SHA-1 pins, immutable pins |
+| References | Branch/tag/commit selection, SHA-1/SHA-256 full IDs and prefixes, object-format length checks, ambiguity/non-commit rejection, immutable pins and hydration |
 | Paths | Absolute/traversal rejection, symlink containment, repository-root semantics |
 | Composition | Merge prefixes, duplicate IDs, cycles spanning index and merge edges |
 | Policy | All ancestor restrictions retained; expanded argv matching; accepted exit codes |
@@ -56,7 +56,23 @@ fields or a shared content-query language. Command entries retain their own
 semantics. Search syntax translation, ranking, source IDs, pagination, response
 budgets, refresh deadlines, and MCP APIs are consumer choices.
 
-Unknown fields and kinds are rejected in v1, so adding even an optional field or
-kind requires a deliberate format-version change. New behavior based on existing
-metadata can remain an implementation feature. SHA-256 commit pins also need
-future spec/schema evolution; v1 commit syntax describes SHA-1.
+Follow the [versioning policy](SPEC.md#23-versioning); consult the
+[changelog](CHANGELOG.md) for revision compatibility and supporting-consumer
+requirements. New behavior using existing metadata can remain an implementation
+feature.
+
+## Commit pins
+
+Use the target repository's object format: SHA-1 permits 7–40 hexadecimal
+characters and SHA-256 permits 7–64. The schemas accept the common 7–64 range;
+repository-aware validation remains mandatory. Prefer full IDs in generated
+indexes. Reject ambiguous prefixes, missing objects, and non-commit objects.
+Object-ID lookup must not accidentally resolve a hexadecimal branch/tag name.
+
+Persist a successfully resolved full ID. Future reads, forced updates, and
+partial-clone hydration must reuse it rather than resolving the prefix again.
+Object retrieval at that fixed revision is permitted; changing the pin is not.
+Test both index-entry pins and root-registry pins, both object formats, boundary
+lengths, uppercase hexadecimal, collisions, and same-revision hydration after
+the remote branch advances. These runtime checks supplement the shared schema
+fixtures.

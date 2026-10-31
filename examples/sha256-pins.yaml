@@ -1,0 +1,13 @@
+# Placeholder references illustrate syntax; replace the URL and full commit ID
+# with a real SHA-256 repository and commit.
+version: 1
+name: Documentation pinned to a SHA-256 commit
+entries:
+  - id: readme
+    name: README at a fixed revision
+    kind: doc
+    path: README.md
+    repo:
+      url: https://example.com/project/sha256-docs.git
+      commit: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      submodules: false

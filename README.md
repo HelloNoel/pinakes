@@ -11,9 +11,9 @@ all consume it.
 
 ## Status
 
-**Draft, version 1.** Backwards-incompatible changes require bumping the
-top-level `version:` field. The spec is versioned independently of any
-implementation.
+See the [specification](SPEC.md) for the current status and
+[versioning rules](SPEC.md#23-versioning). The [changelog](CHANGELOG.md) records
+revision history and compatibility requirements.
 
 ## What's in this repo
 
