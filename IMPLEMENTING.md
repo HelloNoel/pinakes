@@ -1,14 +1,16 @@
 # Implementing Pinakes v1
 
-Read [SPEC.md](SPEC.md) for normative requirements. The schemas validate document
-shape; consumers must also implement Git resolution, safe paths, composition,
-command execution, and credential handling. User setup instructions for the
-reference implementation live in [AIexandria](https://github.com/HelloNoel/aiexandria).
+Read [SPEC.md](SPEC.md) for normative requirements. The schemas validate
+document shape; consumers must also implement Git resolution, safe paths,
+composition, command execution, and credential handling. User setup instructions
+for the reference implementation live in
+[AIexandria](https://github.com/HelloNoel/aiexandria).
 
 ## Suggested implementation order
 
 1. Parse YAML without silently discarding duplicate mapping keys. Reject unknown
-   fields, unknown versions/kinds, explicit nulls, invalid IDs, and conflicting refs.
+   fields, unknown versions/kinds, explicit nulls, invalid IDs, and conflicting
+   refs.
 2. Resolve a registry root to a repository revision. Keep repository identity,
    revision, submodule options, and authentication context explicit.
 3. Resolve doc/index/merge/command entries. Paths are repository-root relative;
@@ -18,38 +20,46 @@ reference implementation live in [AIexandria](https://github.com/HelloNoel/aiexa
    across every route. Pinned commits are immutable. Do not treat cached routes
    as permanent authorization decisions.
 5. Expand the query argument template and execute argv directly. Intersect every
-   inherited allow restriction; apply the deepest supplied timeout. Check accepted
-   exit codes and manage output pipes and descendant processes through timeout.
+   inherited allow restriction; apply the deepest supplied timeout. Check
+   accepted exit codes and manage output pipes and descendant processes through
+   timeout.
 6. Resolve credentials, including submodules, under the documented host rules.
    Missing explicitly configured credentials are errors. Do not resolve auth for
    file URLs. Resolve relative submodule remotes against their parent first.
 
 ## Submodule defaults
 
-Apply `submodules: false` when the field is absent from an index entry's repository reference or a registry root. Explicit `true` opts into recursive initialization and refresh. A reference inherited from its enclosing index retains that repository's effective options.
+Apply `submodules: false` when the field is absent from an index entry's
+repository reference or a registry root. Explicit `true` opts into recursive
+initialization and refresh. A reference inherited from its enclosing index
+retains that repository's effective options.
 
-JSON Schema's `default` is an annotation; validators do not necessarily populate omitted fields. Apply the default in the consumer and test omission, explicit `false`, and explicit `true` in both entry and registry parsing. Persist effective options so cached references are not reinterpreted when defaults change. See the changelog for migration between revisions.
+JSON Schema's `default` is an annotation; validators do not necessarily populate
+omitted fields. Apply the default in the consumer and test omission, explicit
+`false`, and explicit `true` in both entry and registry parsing. Persist
+effective options so cached references are not reinterpreted when defaults
+change. See the changelog for migration between revisions.
 
 ## Conformance checklist
 
-| Area | Minimum verification |
-| --- | --- |
-| Parsing | Both schemas, duplicate keys, nulls, unknown fields/kinds/versions |
-| References | Branch/tag/commit selection, SHA-1/SHA-256 full IDs and prefixes, object-format length checks, ambiguity/non-commit rejection, immutable pins and hydration |
-| Paths | Absolute/traversal rejection, symlink containment, repository-root semantics |
-| Composition | Merge prefixes, duplicate IDs, cycles spanning index and merge edges |
-| Policy | All ancestor restrictions retained; expanded argv matching; accepted exit codes |
-| Processes | Deadline covers execution and output collection; descendants cannot hang calls |
-| Submodules | Omission defaults to false; false skips nested acquisition; true recursively prepares it; cache identities keep the options separate |
-| Credentials | Explicit missing token fails; local URLs skip auth; submodules use resolved hosts |
-| Caching | Correct repository/ref/options identity; failed acquisition does not publish a partial clone |
+| Area        | Minimum verification                                                                                                                                        |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parsing     | Both schemas, duplicate keys, nulls, unknown fields/kinds/versions                                                                                          |
+| References  | Branch/tag/commit selection, SHA-1/SHA-256 full IDs and prefixes, object-format length checks, ambiguity/non-commit rejection, immutable pins and hydration |
+| Paths       | Absolute/traversal rejection, symlink containment, repository-root semantics                                                                                |
+| Composition | Merge prefixes, duplicate IDs, cycles spanning index and merge edges                                                                                        |
+| Policy      | All ancestor restrictions retained; expanded argv matching; accepted exit codes                                                                             |
+| Processes   | Deadline covers execution and output collection; descendants cannot hang calls                                                                              |
+| Submodules  | Omission defaults to false; false skips nested acquisition; true recursively prepares it; cache identities keep the options separate                        |
+| Credentials | Explicit missing token fails; local URLs skip auth; submodules use resolved hosts                                                                           |
+| Caching     | Correct repository/ref/options identity; failed acquisition does not publish a partial clone                                                                |
 
 Run the shared schema cases and examples:
 
-~~~sh
+```sh
 python -m pip install -r tests/requirements.txt
 python tests/validate.py
-~~~
+```
 
 The fixtures in tests/validation.json cover schema-level cases, not complete
 runtime conformance. Add runtime tests for the behaviors above. Passing a JSON

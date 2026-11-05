@@ -2,20 +2,20 @@
 
 **Version:** 1 (draft)
 
-This document defines the **pinakes** format: a YAML file (`pinakes.yaml`)
-that describes a hierarchical, navigable view of a documentation corpus
-hosted in one or more git repositories.
+This document defines the **pinakes** format: a YAML file (`pinakes.yaml`) that
+describes a hierarchical, navigable view of a documentation corpus hosted in one
+or more git repositories.
 
 The intent is to let documentation authors publish a single, vendor-neutral
-description of *which repositories an LLM is allowed to read*, *which documents
-should be presented for navigation*, and *how it should drill into them*.
-A repository referenced by a registry or entry is the read-access boundary;
-`doc` entries curate navigation and are not a per-file allow-list. Any conforming
+description of _which repositories an LLM is allowed to read_, _which documents
+should be presented for navigation_, and _how it should drill into them_. A
+repository referenced by a registry or entry is the read-access boundary; `doc`
+entries curate navigation and are not a per-file allow-list. Any conforming
 runtime (MCP server, library, agent harness, …) can act on that description
 without coupling to a specific implementation.
 
-The keywords MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY in this document
-are to be interpreted as in [RFC 2119].
+The keywords MUST, MUST NOT, SHOULD, SHOULD NOT, and MAY in this document are to
+be interpreted as in [RFC 2119].
 
 [RFC 2119]: https://datatracker.ietf.org/doc/html/rfc2119
 
@@ -23,20 +23,19 @@ are to be interpreted as in [RFC 2119].
 
 ## 1. Overview
 
-A pinakes **index** is a YAML document containing a header, an optional
-command policy, and an ordered list of **entries**. Each entry is one of
-four kinds:
+A pinakes **index** is a YAML document containing a header, an optional command
+policy, and an ordered list of **entries**. Each entry is one of four kinds:
 
 - `doc` — a leaf text file the consumer is allowed to read
 - `index` — a child pinakes index (same repo or another)
 - `merge` — inline another index's entries here
 - `command` — a policy-controlled command (RAG, ripgrep, custom retriever)
 
-Indexes form a directed graph rooted at a single index file. Cycles MUST
-be detected and rejected.
+Indexes form a directed graph rooted at a single index file. Cycles MUST be
+detected and rejected.
 
-A **registry** maps names → root indexes; this is how a runtime knows
-which indexes exist and where to fetch them from.
+A **registry** maps names → root indexes; this is how a runtime knows which
+indexes exist and where to fetch them from.
 
 ---
 
@@ -46,30 +45,30 @@ which indexes exist and where to fetch them from.
 
 Indexes MUST be valid UTF-8 YAML 1.2. The conventional filename is
 `pinakes.yaml`, but consumers MUST NOT rely on the filename — the path is
-specified by whatever points at it (the registry, or a parent `index` /
-`merge` entry).
+specified by whatever points at it (the registry, or a parent `index` / `merge`
+entry).
 
 ### 2.2 Top-level shape
 
 ```yaml
-version: 1                         # REQUIRED. Spec major version.
-name: my-project                   # REQUIRED. Human-readable label.
-description: "Internal docs"       # OPTIONAL. One-line summary for LLM consumption.
+version: 1 # REQUIRED. Spec major version.
+name: my-project # REQUIRED. Human-readable label.
+description: "Internal docs" # OPTIONAL. One-line summary for LLM consumption.
 
-command_policy:                    # OPTIONAL. See §6.
-  allow: '^rg .* docs/'
+command_policy: # OPTIONAL. See §6.
+  allow: "^rg .* docs/"
   timeout_secs: 10
 
-entries:                           # REQUIRED. Ordered list. May be empty.
+entries: # REQUIRED. Ordered list. May be empty.
   - id: getting-started
     name: Getting started
     kind: doc
     path: docs/getting-started.md
 ```
 
-A consumer that encounters an unknown top-level field MUST reject the
-file. (This is intentionally strict: typos in author intent should fail
-loudly rather than silently.)
+A consumer that encounters an unknown top-level field MUST reject the file.
+(This is intentionally strict: typos in author intent should fail loudly rather
+than silently.)
 
 ### 2.3 Versioning
 
@@ -84,8 +83,8 @@ immutable repository commit or tag. Producers using new features should state
 the required revision; the format version alone does not identify it.
 
 After finalization, incompatible changes require a new major format version.
-Editorial clarifications that change neither accepted inputs nor meaning do
-not change the format version. Finalization requires at least one independent
+Editorial clarifications that change neither accepted inputs nor meaning do not
+change the format version. Finalization requires at least one independent
 implementation alongside the reference implementation.
 
 Consumers MUST reject unknown fields and entry kinds. Adding an optional field
@@ -96,10 +95,11 @@ does not make it readable by an older strict consumer.
 Index names, explicit entry IDs, non-merge entry names, repository URLs, paths,
 and supplied `allow`, `branch`, `tag`, and `token_env` strings MUST be nonempty.
 Optional fields MUST be omitted rather than set to YAML null. A derived ID MUST
-be nonempty; provide an explicit ID when the name has no alphanumeric characters.
-`timeout_secs` MUST be a positive integer. `argv` MUST contain at least one string
-and its first element (the executable) MUST be nonempty; later arguments may be
-empty. Each success exit code MUST be an integer from 0 through 255.
+be nonempty; provide an explicit ID when the name has no alphanumeric
+characters. `timeout_secs` MUST be a positive integer. `argv` MUST contain at
+least one string and its first element (the executable) MUST be nonempty; later
+arguments may be empty. Each success exit code MUST be an integer from 0
+through 255.
 
 ---
 
@@ -107,13 +107,13 @@ empty. Each success exit code MUST be an integer from 0 through 255.
 
 Each entry is a YAML mapping with these common fields:
 
-| Field | Type | Required | Notes |
-| --- | --- | :---: | --- |
-| `kind` | string | yes | One of `doc`, `index`, `merge`, `command`. |
-| `id` | string | no | Stable identifier; auto-generated from `name` if omitted (see §3.1). |
-| `name` | string | yes (doc, index, command) | Human-readable label. |
-| `description` | string | no | One-line summary the LLM uses to choose. |
-| `repo` | object | no | Override the enclosing index's repo for this entry only (see §4). |
+| Field         | Type   |         Required          | Notes                                                                |
+| ------------- | ------ | :-----------------------: | -------------------------------------------------------------------- |
+| `kind`        | string |            yes            | One of `doc`, `index`, `merge`, `command`.                           |
+| `id`          | string |            no             | Stable identifier; auto-generated from `name` if omitted (see §3.1). |
+| `name`        | string | yes (doc, index, command) | Human-readable label.                                                |
+| `description` | string |            no             | One-line summary the LLM uses to choose.                             |
+| `repo`        | object |            no             | Override the enclosing index's repo for this entry only (see §4).    |
 
 Kind-specific fields are defined in §3.2–3.5.
 
@@ -128,8 +128,8 @@ When `id` is omitted, consumers MUST derive it from `name` by:
 2. Replacing every other character with `-`.
 3. Trimming leading/trailing `-`.
 
-Two entries that slugify to the same value at the same level constitute
-a duplicate-id error.
+Two entries that slugify to the same value at the same level constitute a
+duplicate-id error.
 
 ### 3.2 `doc` entries
 
@@ -139,20 +139,20 @@ a duplicate-id error.
   kind: doc
   description: "Install + first run"
   path: docs/getting-started.md
-  repo: { ... }                    # OPTIONAL, see §4
+  repo: { ... } # OPTIONAL, see §4
 ```
 
-| Field | Type | Required | Notes |
-| --- | --- | :---: | --- |
-| `path` | string | yes | Repo-relative path to a UTF-8 text file. |
+| Field  | Type   | Required | Notes                                    |
+| ------ | ------ | :------: | ---------------------------------------- |
+| `path` | string |   yes    | Repo-relative path to a UTF-8 text file. |
 
 Once a registry or entry references a repository, consumers MAY expose reads of
 other UTF-8 files beneath that repository's checkout root. A `doc` entry is a
 curated navigation leaf, not a file-access allow-list.
 
-Consumers MUST canonicalize `path` and verify it stays within the entry's
-repo root. Path-traversal attempts (`..`, absolute paths, symlink escapes)
-MUST be rejected.
+Consumers MUST canonicalize `path` and verify it stays within the entry's repo
+root. Path-traversal attempts (`..`, absolute paths, symlink escapes) MUST be
+rejected.
 
 ### 3.3 `index` entries
 
@@ -162,18 +162,18 @@ MUST be rejected.
   kind: index
   description: "REST endpoints"
   path: docs/api/pinakes.yaml
-  repo: { ... }                    # OPTIONAL
+  repo: { ... } # OPTIONAL
 ```
 
-| Field | Type | Required | Notes |
-| --- | --- | :---: | --- |
-| `path` | string | yes | Repo-relative path to another `pinakes.yaml`. |
+| Field  | Type   | Required | Notes                                         |
+| ------ | ------ | :------: | --------------------------------------------- |
+| `path` | string |   yes    | Repo-relative path to another `pinakes.yaml`. |
 
-Following an `index` entry produces a new index level. Consumers SHOULD
-NOT eagerly load child indexes during ordinary navigation —
-load on demand when descending into them. Bounded metadata discovery or an
-explicit cache-preparation operation MAY preload child indexes without
-eagerly acquiring every referenced document or command repository.
+Following an `index` entry produces a new index level. Consumers SHOULD NOT
+eagerly load child indexes during ordinary navigation — load on demand when
+descending into them. Bounded metadata discovery or an explicit
+cache-preparation operation MAY preload child indexes without eagerly acquiring
+every referenced document or command repository.
 
 ### 3.4 `merge` entries
 
@@ -183,27 +183,28 @@ Merge entries accept only `kind`, `path`, `prefix`, and `repo`. The common `id`,
 ```yaml
 - kind: merge
   path: docs/api/pinakes.yaml
-  prefix: "api-"                   # OPTIONAL
-  repo: { ... }                    # OPTIONAL
+  prefix: "api-" # OPTIONAL
+  repo: { ... } # OPTIONAL
 ```
 
-| Field | Type | Required | Notes |
-| --- | --- | :---: | --- |
-| `path` | string | yes | Repo-relative path to another `pinakes.yaml`. |
-| `prefix` | string | no | String prepended to each merged entry's `id`. |
+| Field    | Type   | Required | Notes                                         |
+| -------- | ------ | :------: | --------------------------------------------- |
+| `path`   | string |   yes    | Repo-relative path to another `pinakes.yaml`. |
+| `prefix` | string |    no    | String prepended to each merged entry's `id`. |
 
-A `merge` entry is **flattened** at load time: the target index's entries
-appear in this index's level as if written here. `merge` entries do not
-themselves have an `id` or appear in a consumer's view of the parent.
+A `merge` entry is **flattened** at load time: the target index's entries appear
+in this index's level as if written here. `merge` entries do not themselves have
+an `id` or appear in a consumer's view of the parent.
 
 If `prefix` is set, every merged entry's `id` becomes `prefix + original_id`.
 This disambiguates when a parent merges multiple sibling indexes.
 
 Cycle detection: implementations MUST track repository identity (URL and Git
 reference) and normalized index path along the active ancestry. They MUST reject
-any `merge` or `index` target already in that ancestry, including ancestry carried
-through a merge and retained across lazy index descents. Different Git references
-are distinct identities. Reusing an index in separate sibling branches is allowed.
+any `merge` or `index` target already in that ancestry, including ancestry
+carried through a merge and retained across lazy index descents. Different Git
+references are distinct identities. Reusing an index in separate sibling
+branches is allowed.
 
 ### 3.5 `command` entries
 
@@ -213,62 +214,66 @@ are distinct identities. Reusing an index in separate sibling branches is allowe
   kind: command
   description: "Substring search over docs/. Pass a query."
   argv: ["rg", "--max-count", "20", "--", "{query}", "docs/"]
-  success_exit_codes: [0, 1]       # OPTIONAL
-  repo: { ... }                    # OPTIONAL
+  success_exit_codes: [0, 1] # OPTIONAL
+  repo: { ... } # OPTIONAL
 ```
 
-| Field | Type | Required | Notes |
-| --- | --- | :---: | --- |
-| `argv` | array of string | yes | Argv vector. The token `{query}` is substituted with caller input (see §6.1). |
-| `success_exit_codes` | array of integer | no | Exit codes treated as success. Defaults to `[0]`. |
+| Field                | Type             | Required | Notes                                                                         |
+| -------------------- | ---------------- | :------: | ----------------------------------------------------------------------------- |
+| `argv`               | array of string  |   yes    | Argv vector. The token `{query}` is substituted with caller input (see §6.1). |
+| `success_exit_codes` | array of integer |    no    | Exit codes treated as success. Defaults to `[0]`.                             |
 
-Commands MUST be executed under the policy chain defined in §6, with the
-working directory set to the entry's repo root. They MUST be invoked
-directly via the OS process API (e.g. `execve`); consumers MUST NOT
-pass `argv` through a shell.
+Commands MUST be executed under the policy chain defined in §6, with the working
+directory set to the entry's repo root. They MUST be invoked directly via the OS
+process API (e.g. `execve`); consumers MUST NOT pass `argv` through a shell.
 
 ---
 
 ## 4. Cross-repository references
 
-Any entry MAY include a `repo` object overriding the repository in which
-its `path` (or `argv`'s working directory) is resolved:
+Any entry MAY include a `repo` object overriding the repository in which its
+`path` (or `argv`'s working directory) is resolved:
 
 ```yaml
 repo:
-  url: https://example.com/org/repo.git    # REQUIRED
-  branch: main                              # one of branch / tag / commit, OPTIONAL
+  url: https://example.com/org/repo.git # REQUIRED
+  branch: main # one of branch / tag / commit, OPTIONAL
   tag: v1.2.3
   commit: 0123abcd...
-  token_env: PROJECT_TOKEN                  # OPTIONAL — see §7
-  submodules: false      # OPTIONAL, default false
+  token_env: PROJECT_TOKEN # OPTIONAL — see §7
+  submodules: false # OPTIONAL, default false
 ```
 
-| Field | Type | Required | Notes |
-| --- | --- | :---: | --- |
-| `url` | string | yes | Git URL. SSH (`git@host:org/repo.git`), HTTPS, and `file://` are valid. |
-| `branch` | string | no | Branch name. Mutually exclusive with `tag` and `commit`. |
-| `tag` | string | no | Tag name. |
-| `commit` | string | no | Full SHA-1 (40 characters) or SHA-256 (64 characters) commit ID, or an unambiguous prefix of at least 7 characters. The target repository determines the object format. **Pinned commits MUST never be auto-refreshed.** |
-| `token_env` | string | no | Environment variable name to read an auth token from. |
-| `submodules` | bool | no | Whether to recursively initialize submodules on clone or refresh. Default `false`. |
+| Field        | Type   | Required | Notes                                                                                                                                                                                                                    |
+| ------------ | ------ | :------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `url`        | string |   yes    | Git URL. SSH (`git@host:org/repo.git`), HTTPS, and `file://` are valid.                                                                                                                                                  |
+| `branch`     | string |    no    | Branch name. Mutually exclusive with `tag` and `commit`.                                                                                                                                                                 |
+| `tag`        | string |    no    | Tag name.                                                                                                                                                                                                                |
+| `commit`     | string |    no    | Full SHA-1 (40 characters) or SHA-256 (64 characters) commit ID, or an unambiguous prefix of at least 7 characters. The target repository determines the object format. **Pinned commits MUST never be auto-refreshed.** |
+| `token_env`  | string |    no    | Environment variable name to read an auth token from.                                                                                                                                                                    |
+| `submodules` | bool   |    no    | Whether to recursively initialize submodules on clone or refresh. Default `false`.                                                                                                                                       |
 
-When `submodules` is omitted from a repository reference, consumers MUST treat it as `false`. This applies to both entry-level references and registry roots. Consumers MUST NOT initialize or refresh submodules for a reference with `submodules: false`; with `submodules: true`, consumers MUST initialize and refresh them recursively as needed for that reference. A missing submodule file MUST NOT implicitly enable submodule acquisition.
+When `submodules` is omitted from a repository reference, consumers MUST treat
+it as `false`. This applies to both entry-level references and registry roots.
+Consumers MUST NOT initialize or refresh submodules for a reference with
+`submodules: false`; with `submodules: true`, consumers MUST initialize and
+refresh them recursively as needed for that reference. A missing submodule file
+MUST NOT implicitly enable submodule acquisition.
 
-If `repo` is omitted, the entry uses the enclosing index's repo. If no
-parent has a repo (e.g. a hand-written root index loaded from a local
-file), the consumer SHOULD reject the index.
+If `repo` is omitted, the entry uses the enclosing index's repo. If no parent
+has a repo (e.g. a hand-written root index loaded from a local file), the
+consumer SHOULD reject the index.
 
 A `commit` value MUST contain 7–64 hexadecimal characters. Its maximum valid
-length is determined by the target repository's object format: 40 for SHA-1,
-64 for SHA-256. Consumers MUST reject a pin that is too long for that repository
-or uses an unsupported object format. No additional hash-algorithm field is
+length is determined by the target repository's object format: 40 for SHA-1, 64
+for SHA-256. Consumers MUST reject a pin that is too long for that repository or
+uses an unsupported object format. No additional hash-algorithm field is
 required. JSON Schema checks the shared syntactic range; consumers MUST also
 perform these repository-aware checks.
 
 Commit prefixes MUST identify exactly one object, and that object MUST be a
-commit. Missing or ambiguous prefixes and non-commit objects MUST be rejected;
-a hexadecimal branch or tag name MUST NOT take precedence over an object-ID
+commit. Missing or ambiguous prefixes and non-commit objects MUST be rejected; a
+hexadecimal branch or tag name MUST NOT take precedence over an object-ID
 prefix. Full IDs are recommended for published indexes. Consumers MUST acquire
 sufficient history (or fetch the requested object) to resolve a pin before
 serving content. Once resolved, a cached pin MUST retain that exact commit ID;
@@ -276,9 +281,9 @@ later object acquisition MUST NOT reinterpret the prefix as a different commit.
 
 ### 4.1 Path semantics
 
-Within a single repo, all `path:` fields are **repo-root relative**.
-When an entry has its own `repo:`, `path:` is relative to **that** repo's
-root, not the parent's.
+Within a single repo, all `path:` fields are **repo-root relative**. When an
+entry has its own `repo:`, `path:` is relative to **that** repo's root, not the
+parent's.
 
 ### 4.2 Refresh policy
 
@@ -302,9 +307,9 @@ freshness/snapshot API.
 
 ## 5. Registry
 
-A **registry** is a separate file that maps names to top-level pinakes
-indexes. It is consumer-side configuration; the spec defines the format
-so registries are portable across implementations.
+A **registry** is a separate file that maps names to top-level pinakes indexes.
+It is consumer-side configuration; the spec defines the format so registries are
+portable across implementations.
 
 ```yaml
 indexes:
@@ -314,7 +319,7 @@ indexes:
       url: https://github.com/rust-lang/rust.git
       branch: master
     path: docs/pinakes.yaml
-    refresh: 24h                             # OPTIONAL, see below
+    refresh: 24h # OPTIONAL, see below
 
   internal:
     repo:
@@ -325,15 +330,15 @@ indexes:
     refresh: never
 ```
 
-| Registry-entry field | Type | Required | Notes |
-| --- | --- | :---: | --- |
-| `repo` | object | yes | Same shape as §4. |
-| `path` | string | yes | Path to the root index inside that repo. |
-| `description` | string | no | One-line summary the consumer may surface. |
-| `refresh` | string | no | Either `never` or a duration string (`5m`, `1h`, `24h`, …). Overrides the consumer default throughout the index tree and all referenced repositories. |
+| Registry-entry field | Type   | Required | Notes                                                                                                                                                 |
+| -------------------- | ------ | :------: | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `repo`               | object |   yes    | Same shape as §4.                                                                                                                                     |
+| `path`               | string |   yes    | Path to the root index inside that repo.                                                                                                              |
+| `description`        | string |    no    | One-line summary the consumer may surface.                                                                                                            |
+| `refresh`            | string |    no    | Either `never` or a duration string (`5m`, `1h`, `24h`, …). Overrides the consumer default throughout the index tree and all referenced repositories. |
 
-Registry **keys** are the names a consumer (or LLM) uses to address an
-index. They MUST be unique within a registry.
+Registry **keys** are the names a consumer (or LLM) uses to address an index.
+They MUST be unique within a registry.
 
 Registry mappings MUST contain at least one index. Names MUST match
 `^[A-Za-z0-9][A-Za-z0-9_-]*$`. Refresh strings are case-insensitive `never` or
@@ -352,45 +357,45 @@ A `command_policy` block at any index level looks like:
 
 ```yaml
 command_policy:
-  allow: '^rg( -[A-Za-z]+)*( --[A-Za-z-]+(=[^ ]+)?)* [^;&|`$]+$'
+  allow: "^rg( -[A-Za-z]+)*( --[A-Za-z-]+(=[^ ]+)?)* [^;&|`$]+$"
   timeout_secs: 10
 ```
 
-| Field | Type | Required | Notes |
-| --- | --- | :---: | --- |
-| `allow` | string (regex) | no | A portable regex; see §6.1. |
-| `timeout_secs` | integer | no | Wall-clock seconds. |
+| Field          | Type           | Required | Notes                       |
+| -------------- | -------------- | :------: | --------------------------- |
+| `allow`        | string (regex) |    no    | A portable regex; see §6.1. |
+| `timeout_secs` | integer        |    no    | Wall-clock seconds.         |
 
 ### 6.1 Allow regex (intersect-only)
 
 For portable policies, consumers MUST support literals, `.`, `^`, `$`, bracket
-classes and negated classes, grouping, alternation, and the quantifiers `?`, `*`,
-`+`, `{m}`, `{m,}`, and `{m,n}`. Matching is case-sensitive on Unicode scalar values;
-`.` excludes newline, anchors refer to the whole string, and named POSIX classes
-such as `[[:alpha:]]` use ASCII definitions. Matching searches for a substring
-unless the author adds anchors. Consumers MUST reject unsupported syntax.
-Additional engine syntax MAY be supported, but authors using it sacrifice
-portability; shorthand classes such as `\w` and look-around are outside this
-portable subset. AIexandria additionally accepts Rust `regex` 1.x syntax.
+classes and negated classes, grouping, alternation, and the quantifiers `?`,
+`*`, `+`, `{m}`, `{m,}`, and `{m,n}`. Matching is case-sensitive on Unicode
+scalar values; `.` excludes newline, anchors refer to the whole string, and
+named POSIX classes such as `[[:alpha:]]` use ASCII definitions. Matching
+searches for a substring unless the author adds anchors. Consumers MUST reject
+unsupported syntax. Additional engine syntax MAY be supported, but authors using
+it sacrifice portability; shorthand classes such as `\w` and look-around are
+outside this portable subset. AIexandria additionally accepts Rust `regex` 1.x
+syntax.
 
-The flattened `argv` (joined by single spaces) MUST match every `allow`
-regex on the chain — root and every parent down to the entry. **Children
-narrow but never widen.** An empty chain (no `allow` anywhere) means
-**deny all**.
+The flattened `argv` (joined by single spaces) MUST match every `allow` regex on
+the chain — root and every parent down to the entry. **Children narrow but never
+widen.** An empty chain (no `allow` anywhere) means **deny all**.
 
-`{query}` substitution happens **before** the regex check: the
-post-substitution argv is what gets matched. This is intentional — a
-malicious query can't bypass the allowlist.
+`{query}` substitution happens **before** the regex check: the post-substitution
+argv is what gets matched. This is intentional — a malicious query can't bypass
+the allowlist.
 
 `{query}` is substituted **into argv elements**, never via a shell.
 Implementations MUST NOT invoke a shell to expand it.
 
 ### 6.2 Timeout
 
-The chain's effective timeout is the **deepest supplied** `timeout_secs`
-on the chain (a child's value takes precedence over the parent's). If no
-level sets a timeout, implementations SHOULD apply a sane default
-(reference implementation: 30 seconds).
+The chain's effective timeout is the **deepest supplied** `timeout_secs` on the
+chain (a child's value takes precedence over the parent's). If no level sets a
+timeout, implementations SHOULD apply a sane default (reference implementation:
+30 seconds).
 
 The timeout covers process execution and collection of both output streams,
 including pipes held by descendants. On timeout consumers MUST stop waiting and
@@ -398,9 +403,9 @@ terminate the command, and SHOULD terminate its remaining descendants.
 
 ### 6.3 Exit codes
 
-By default, exit code `0` is success and any other code is failure. An
-entry MAY set `success_exit_codes: [0, 1]` (e.g. for grep-family tools
-where exit 1 means "no matches").
+By default, exit code `0` is success and any other code is failure. An entry MAY
+set `success_exit_codes: [0, 1]` (e.g. for grep-family tools where exit 1 means
+"no matches").
 
 ### 6.4 Output
 
@@ -408,45 +413,46 @@ Consumers SHOULD bound retained stdout and stderr while continuing to drain both
 streams. Truncation MUST preserve valid UTF-8 and MUST NOT panic on a character
 boundary. Error diagnostics SHOULD have the same bounded-output treatment.
 
-Implementations SHOULD truncate command stdout to a reasonable cap
-(reference implementation: 256 KiB). The truncation point and behavior
-(suffix, error, …) is implementation-defined; this is not part of the
-spec because it depends on the consumer's transport.
+Implementations SHOULD truncate command stdout to a reasonable cap (reference
+implementation: 256 KiB). The truncation point and behavior (suffix, error, …)
+is implementation-defined; this is not part of the spec because it depends on
+the consumer's transport.
 
 ### 6.5 Execution trust
 
 Command policy is not an operating-system sandbox. A working directory does not
 confine filesystem access, and direct process execution does not restrict a
-program's network access, environment, or privileges. A consumer enabling commands
-for a registry trusts the registered index and the command definitions and policies
-in its referenced indexes, including future updates. Operators MUST either trust
-those authors or enforce their own execution authorization and OS isolation.
-Consumers MAY disable execution while still exposing command metadata.
+program's network access, environment, or privileges. A consumer enabling
+commands for a registry trusts the registered index and the command definitions
+and policies in its referenced indexes, including future updates. Operators MUST
+either trust those authors or enforce their own execution authorization and OS
+isolation. Consumers MAY disable execution while still exposing command
+metadata.
 
-Query arguments MUST be separated from program options using the program's option
-terminator (for ripgrep, `--` before `{query}`) or an equivalent explicit pattern
-argument. Direct execution prevents shell expansion, not command-line option
-injection. An allow regex operates on the joined string and cannot prove argument
-boundaries or that the selected program is safe.
+Query arguments MUST be separated from program options using the program's
+option terminator (for ripgrep, `--` before `{query}`) or an equivalent explicit
+pattern argument. Direct execution prevents shell expansion, not command-line
+option injection. An allow regex operates on the joined string and cannot prove
+argument boundaries or that the selected program is safe.
 
 ---
 
 ## 7. Authentication
 
-A consumer fetching repos MUST resolve credentials in the following
-order, stopping at the first match:
+A consumer fetching repos MUST resolve credentials in the following order,
+stopping at the first match:
 
-1. The entry's `repo.token_env` (if set, must be present in the
-   environment; absence is an error, not a fallback).
-2. A consumer-side host map (typically a separate config file)
-   keyed by the URL's host. SSH URLs (`git@host:org/repo.git`)
-   parse `host` from the part before `:`.
+1. The entry's `repo.token_env` (if set, must be present in the environment;
+   absence is an error, not a fallback).
+2. A consumer-side host map (typically a separate config file) keyed by the
+   URL's host. SSH URLs (`git@host:org/repo.git`) parse `host` from the part
+   before `:`.
 3. SSH agent (for `git@` URLs only).
 
 `file://` URLs require no auth and MUST skip resolution entirely.
 
-The host map's exact file location and shape is consumer-side
-configuration and not normative. A reference shape:
+The host map's exact file location and shape is consumer-side configuration and
+not normative. A reference shape:
 
 ```yaml
 hosts:
@@ -459,8 +465,8 @@ hosts:
 
 Submodule remotes MUST be authenticated against the same host map; relative URLs
 MUST first be resolved against the parent remote. Missing explicitly configured
-credentials MUST be errors, including during submodule initialization.
-When no explicit credentials match, consumers MAY use system credential helpers.
+credentials MUST be errors, including during submodule initialization. When no
+explicit credentials match, consumers MAY use system credential helpers.
 
 ---
 
@@ -478,11 +484,11 @@ A **conforming consumer** MUST:
 
 A conforming consumer MAY:
 
-- Skip support for `command` entries entirely (in which case it MUST
-  surface them as inert metadata, not omit them).
+- Skip support for `command` entries entirely (in which case it MUST surface
+  them as inert metadata, not omit them).
 - Cache parsed indexes in memory between requests.
-- Apply per-implementation defaults (timeouts, output caps, refresh
-  intervals) that this spec leaves unspecified.
+- Apply per-implementation defaults (timeouts, output caps, refresh intervals)
+  that this spec leaves unspecified.
 
 A conforming consumer MUST NOT:
 
@@ -491,22 +497,21 @@ A conforming consumer MUST NOT:
 - Allow children to widen any parent's `allow` regex.
 
 A test corpus for conformance lives at [`examples/`](./examples/). It is
-informative, not normative — implementations are free to add their own
-fixtures.
+informative, not normative — implementations are free to add their own fixtures.
 
 ---
 
 ## 9. Open questions
 
-The following are deliberately unspecified in version 1 and are candidates
-for a future revision:
+The following are deliberately unspecified in version 1 and are candidates for a
+future revision:
 
-- **Internationalization.** `name` and `description` are single strings.
-  A future version may add a localized form.
-- **Schema evolution.** No `extends:` mechanism for sharing common
-  definitions across indexes; `merge` is a coarser tool.
+- **Internationalization.** `name` and `description` are single strings. A
+  future version may add a localized form.
+- **Schema evolution.** No `extends:` mechanism for sharing common definitions
+  across indexes; `merge` is a coarser tool.
 - **Telemetry / observability.** No spec-mandated logging or metrics.
-- **Signing.** No mechanism for a consumer to verify an index hasn't
-  been tampered with in transit.
+- **Signing.** No mechanism for a consumer to verify an index hasn't been
+  tampered with in transit.
 
 Feedback on any of these is welcome — open an issue or PR.
