@@ -1,0 +1,19 @@
+version: 1
+name: Documentation from nested repositories
+entries:
+  - id: nested-guide
+    name: Nested guide
+    kind: doc
+    repo:
+      url: https://example.com/team/docs.git
+      branch: main
+      submodules: true
+    path: vendor/guide/README.md
+  - id: overview
+    name: Parent repository overview
+    kind: doc
+    repo:
+      url: https://example.com/team/docs.git
+      branch: main
+      submodules: false
+    path: README.md

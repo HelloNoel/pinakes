@@ -10,6 +10,7 @@ for kind, filename in [("index", "pinakes.schema.json"), ("registry", "registry.
     schema = json.loads((root / "schema" / filename).read_text())
     jsonschema.Draft202012Validator.check_schema(schema)
     validators[kind] = jsonschema.Draft202012Validator(schema)
+    assert schema["$defs"]["gitRef"]["properties"]["submodules"]["default"] is False
 cases = json.loads((root / "tests" / "validation.json").read_text())
 for case in cases:
     errors = list(validators[case["kind"]].iter_errors(case["value"]))

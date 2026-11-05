@@ -24,6 +24,12 @@ reference implementation live in [AIexandria](https://github.com/HelloNoel/aiexa
    Missing explicitly configured credentials are errors. Do not resolve auth for
    file URLs. Resolve relative submodule remotes against their parent first.
 
+## Submodule defaults
+
+Apply `submodules: false` when the field is absent from an index entry's repository reference or a registry root. Explicit `true` opts into recursive initialization and refresh. A reference inherited from its enclosing index retains that repository's effective options.
+
+JSON Schema's `default` is an annotation; validators do not necessarily populate omitted fields. Apply the default in the consumer and test omission, explicit `false`, and explicit `true` in both entry and registry parsing. Persist effective options so cached references are not reinterpreted when defaults change. See the changelog for migration between revisions.
+
 ## Conformance checklist
 
 | Area | Minimum verification |
@@ -34,6 +40,7 @@ reference implementation live in [AIexandria](https://github.com/HelloNoel/aiexa
 | Composition | Merge prefixes, duplicate IDs, cycles spanning index and merge edges |
 | Policy | All ancestor restrictions retained; expanded argv matching; accepted exit codes |
 | Processes | Deadline covers execution and output collection; descendants cannot hang calls |
+| Submodules | Omission defaults to false; false skips nested acquisition; true recursively prepares it; cache identities keep the options separate |
 | Credentials | Explicit missing token fails; local URLs skip auth; submodules use resolved hosts |
 | Caching | Correct repository/ref/options identity; failed acquisition does not publish a partial clone |
 

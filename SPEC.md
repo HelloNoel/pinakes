@@ -241,7 +241,7 @@ repo:
   tag: v1.2.3
   commit: 0123abcd...
   token_env: PROJECT_TOKEN                  # OPTIONAL — see §7
-  submodules: true                          # OPTIONAL, default true
+  submodules: false      # OPTIONAL, default false
 ```
 
 | Field | Type | Required | Notes |
@@ -251,7 +251,9 @@ repo:
 | `tag` | string | no | Tag name. |
 | `commit` | string | no | Full SHA-1 (40 characters) or SHA-256 (64 characters) commit ID, or an unambiguous prefix of at least 7 characters. The target repository determines the object format. **Pinned commits MUST never be auto-refreshed.** |
 | `token_env` | string | no | Environment variable name to read an auth token from. |
-| `submodules` | bool | no | Whether to recursively initialize submodules on clone. Default `true`. |
+| `submodules` | bool | no | Whether to recursively initialize submodules on clone or refresh. Default `false`. |
+
+When `submodules` is omitted from a repository reference, consumers MUST treat it as `false`. This applies to both entry-level references and registry roots. Consumers MUST NOT initialize or refresh submodules for a reference with `submodules: false`; with `submodules: true`, consumers MUST initialize and refresh them recursively as needed for that reference. A missing submodule file MUST NOT implicitly enable submodule acquisition.
 
 If `repo` is omitted, the entry uses the enclosing index's repo. If no
 parent has a repo (e.g. a hand-written root index loaded from a local

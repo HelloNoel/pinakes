@@ -6,6 +6,13 @@ revision compatibility and supporting-consumer requirements. See the
 
 ## [Unreleased]
 
+### 2026-11-02
+
+- Change the default for omitted `repo.submodules` to `false` in indexes and registries. Submodule initialization and refresh now require explicit `true`.
+- Compatibility: `version: 1` and accepted syntax are unchanged, but references omitting this field change meaning. Existing indexes that rely on nested documentation must add `submodules: true` before adopting this revision. Explicit boolean values retain their meaning.
+- Producers supporting consumers on both sides of this revision should emit an explicit boolean. Otherwise, state the required draft revision; format version alone does not identify the default.
+- AIexandria development builds targeting v0.4.0 implement this revision. Releases through v0.3.0 use the previous default. This revision does not finalize v1.
+
 ### 2026-10-30
 
 - Add SHA-256 commit IDs and unambiguous prefixes in both indexes and registries.
